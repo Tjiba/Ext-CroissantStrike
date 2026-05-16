@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>CroissantStrike</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- HEADER -->
+    <header>
+      <div class="header-left">
+        <div class="logo-wrap">
+          <img src="../icons/logo.jpg" alt="CroissantStrike" class="logo-img">
+        </div>
+        <div class="header-titles">
+          <div class="channel-name">CroissantStrike</div>
+          <div id="event-name" class="event-name">CS Pro · Français</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="badge-live" class="badge-live hidden">
+          <span class="live-dot"></span>
+          <span class="badge-label">EN DIRECT</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="live">Live</button>
+      <button class="tab-btn" data-tab="results">Résultats</button>
+      <button class="tab-btn" data-tab="liens">Liens</button>
+    </div>
+
+    <!-- TAB: LIVE -->
+    <div id="tab-live" class="tab-panel">
+
+      <!-- THUMBNAIL -->
+      <div id="thumbnail-wrap" class="hidden">
+        <div class="thumb-container">
+          <a id="thumbnail-link" href="#">
+            <img id="stream-thumbnail" alt="Live preview">
+            <div class="thumb-play-btn">▶</div>
+            <div class="thumb-stats">
+              <span id="stream-duration" class="thumb-stat hidden">⏱ <span id="duration-value"></span></span>
+              <span id="thumb-viewers" class="thumb-stat hidden">👁 <span id="viewer-overlay-value"></span></span>
+            </div>
+          </a>
+          <div class="thumb-meta">
+            <p id="stream-title" class="stream-title"></p>
+            <button id="watch-btn-meta" class="btn-watch-sm">▶ Twitch</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MATCH EN COURS -->
+      <section id="match-section" class="hidden">
+        <div class="section-header">
+          <span class="section-label">MATCH EN COURS</span>
+          <span id="map-badge" class="map-pill"></span>
+        </div>
+        <div class="match-card">
+          <div class="team-block">
+            <div id="team-a-name" class="team-name"></div>
+            <div id="score-a" class="score score-a"></div>
+          </div>
+          <div class="divider-col">
+            <span class="vs-text">vs</span>
+            <button id="watch-btn" class="btn-watch">▶ Regarder</button>
+          </div>
+          <div class="team-block">
+            <div id="team-b-name" class="team-name"></div>
+            <div id="score-b" class="score score-b"></div>
+          </div>
+        </div>
+        <div id="map-scores" class="map-pills-row"></div>
+      </section>
+
+      <!-- MATCHS EN COURS (PandaScore) -->
+      <section id="global-live-section">
+        <div class="section-header">
+          <span class="section-label">MATCHS EN COURS</span>
+        </div>
+        <div id="global-live-list"></div>
+      </section>
+
+      <!-- HORS LIVE -->
+      <section id="offline-section" class="hidden">
+        <div class="status-card">
+          <div class="offline-icon">📡</div>
+          <p class="status-msg">CroissantStrike est hors-ligne</p>
+          <button id="twitch-btn" class="btn-outline">Voir la chaîne</button>
+        </div>
+      </section>
+
+      <footer class="live-footer">
+        <a id="btn-youtube" class="footer-link" href="https://www.youtube.com/@CroissantStrike" target="_blank">
+          <svg width="14" height="10" viewBox="0 0 24 17" fill="none">
+            <rect width="24" height="17" rx="4" fill="#FF0000"/>
+            <path d="M9.5 12V5L16.5 8.5Z" fill="white"/>
+          </svg>
+          YouTube
+        </a>
+        <div class="footer-divider"></div>
+        <a id="btn-winamax" class="footer-link" href="https://www.winamax.fr" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#e63946">
+            <path d="M2 4h3l3 10 3-7h2l3 7 3-10h3l-4.5 16h-2.5l-3-8-3 8H7.5Z"/>
+          </svg>
+          Winamax
+        </a>
+      </footer>
+
+    </div>
+
+    <!-- TAB: RÉSULTATS -->
+    <div id="tab-results" class="tab-panel hidden">
+      <div id="results-list" class="results-list"></div>
+    </div>
+
+    <!-- TAB: LIENS -->
+    <div id="tab-liens" class="tab-panel hidden">
+      <div class="links-list">
+
+        <div class="links-category">STREAM</div>
+        <a class="link-row" href="https://www.twitch.tv/croissantstrike" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#9147ff"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+          <div class="link-info">
+            <span class="link-label">Twitch</span>
+            <span class="link-sub">croissantstrike</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+        <a class="link-row" href="https://www.twitch.tv/croissantstrike2" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#9147ff"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+          <div class="link-info">
+            <span class="link-label">Twitch 2</span>
+            <span class="link-sub">croissantstrike2</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+
+        <div class="links-category">YOUTUBE</div>
+        <a class="link-row" href="https://www.youtube.com/@CroissantStrike" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 17" fill="none"><rect width="24" height="17" rx="4" fill="#FF0000"/><path d="M9.5 12V5L16.5 8.5Z" fill="white"/></svg>
+          <div class="link-info">
+            <span class="link-label">YouTube</span>
+            <span class="link-sub">@CroissantStrike</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+        <a class="link-row" href="https://www.youtube.com/@CroissantStrikeVOD" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 17" fill="none"><rect width="24" height="17" rx="4" fill="#FF0000"/><path d="M9.5 12V5L16.5 8.5Z" fill="white"/></svg>
+          <div class="link-info">
+            <span class="link-label">YouTube VOD</span>
+            <span class="link-sub">@CroissantStrikeVOD</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+
+        <div class="links-category">RÉSEAUX</div>
+        <a class="link-row" href="https://x.com/CroissantStrike" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#e7e9ea"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <div class="link-info">
+            <span class="link-label">Twitter / X</span>
+            <span class="link-sub">@CroissantStrike</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+        <a class="link-row" href="https://www.instagram.com/croissantstrike/" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          <div class="link-info">
+            <span class="link-label">Instagram</span>
+            <span class="link-sub">@croissantstrike</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+        <a class="link-row" href="https://www.tiktok.com/@croissantstrike" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#f0f0f0"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>
+          <div class="link-info">
+            <span class="link-label">TikTok</span>
+            <span class="link-sub">@croissantstrike</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+
+        <div class="links-category">COMMUNAUTÉ</div>
+        <a class="link-row" href="https://www.faceit.com/fr/inv/jevDdtr" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#FF5500"><path d="M0 0h11.1v11.1H0zm12.9 0H24v11.1H12.9zM0 12.9h11.1V24H0zm12.9 0H24V24H12.9z"/></svg>
+          <div class="link-info">
+            <span class="link-label">Hub Faceit</span>
+            <span class="link-sub">Rejoindre la communauté</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+        <a class="link-row" href="https://eliminate.fr/partner/croissantstrike/" target="_blank">
+          <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="#FFA500"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM5.17 5H20l-1.68 8.39a2 2 0 01-1.97 1.61H8.75a2 2 0 01-1.97-1.66L5.17 5zM3 3H1V1H3v2zm2 2l.5 2.5"/></svg>
+          <div class="link-info">
+            <span class="link-label">Shop</span>
+            <span class="link-sub">eliminate.fr</span>
+          </div>
+          <span class="link-arrow">›</span>
+        </a>
+
+      </div>
+    </div>
+
+
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Cloudflare / Wrangler
+worker/.wrangler/
+.wrangler/
+*.log
+
+# AI / dev tools
+.claude/
+.superpowers/
+docs/superpowers/
+PLAN.md
+
+# Secrets & env
+.env
+.env.*
+*.secret
+
+# OS
+.DS_Store
+Thumbs.db
