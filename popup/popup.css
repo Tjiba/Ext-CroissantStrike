@@ -683,6 +683,13 @@ a.recent-date:hover {
   max-width: 100%;
 }
 
+.dp-veto-logo {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  display: block;
+}
+
 .hltv-favicon {
   width: 14px;
   height: 14px;
@@ -774,6 +781,151 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
   transition: color .15s, background .15s;
 }
 .btn-icon:hover { color: var(--brand); background: var(--brand-dim); }
+
+/* ── EVENTS ── */
+.events-list {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px 10px;
+}
+
+.events-month {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 10px 2px 5px;
+}
+.events-month:first-child { padding-top: 4px; }
+
+.events-status-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 10px 2px 5px;
+  color: var(--text-muted);
+}
+.events-status-header:first-child { padding-top: 4px; }
+.events-status-ongoing { color: var(--green); }
+
+.event-status-chip {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.chip-ongoing {
+  background: rgba(61, 220, 132, 0.12);
+  color: var(--green);
+  border: 1px solid rgba(61, 220, 132, 0.3);
+}
+.chip-terminated {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.event-row-terminated .event-name { color: var(--text-muted); }
+.event-row-terminated .event-date { color: var(--text-muted); }
+.event-logo-bg-terminated { background: var(--bg3); }
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: background .12s;
+}
+.event-row:hover { background: var(--bg3); }
+
+.event-logo-bg {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.event-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+.event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.event-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-date {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ── LIENS OVERLAY ── */
+.liens-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  pointer-events: none;
+}
+.liens-overlay.is-open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.liens-overlay-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #111113;
+  border-bottom: 1px solid rgba(255, 165, 0, 0.18);
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+.liens-overlay-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.liens-overlay-body {
+  flex: 1;
+  overflow-y: auto;
+}
 
 /* ── ONGLET LIENS ── */
 .links-list {

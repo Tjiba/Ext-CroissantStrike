@@ -1,7 +1,17 @@
 const TWITCH_URL = 'https://www.twitch.tv/croissantstrike';
 
-
 const DARK_LOGOS = new Set(['Spirit', 'Team Spirit', 'paiN', 'paiN Gaming']);
+
+function formatStageBadge(stage, playoff) {
+  const s = (stage ?? '').toLowerCase().trim();
+  if (/^final$|grand.?final/.test(s)) return { label: 'FINALE', cls: 'final' };
+  if (/1\/2|semi/.test(s)) return { label: '½ FINALE', cls: 'playoff' };
+  if (/1\/4|quarter/.test(s)) return { label: '¼ FINALE', cls: 'playoff' };
+  if (/3rd.?place|third.?place/.test(s)) return { label: '3e PLACE', cls: 'playoff' };
+  if (playoff === true) return { label: 'PLAYOFFS', cls: 'playoff' };
+  if (playoff === false) return { label: 'GROUPES', cls: 'group' };
+  return null;
+}
 
 let durationInterval = null;
 
@@ -21,13 +31,25 @@ function initTabs() {
   });
 }
 
+function initLiensOverlay() {
+  const overlay = document.getElementById('liens-overlay');
+  document.getElementById('btn-liens').addEventListener('click', () => {
+    overlay.classList.add('is-open');
+  });
+  document.getElementById('btn-liens-close').addEventListener('click', () => {
+    overlay.classList.remove('is-open');
+  });
+}
+
 async function init() {
   initTabs();
-  const { liveState, hltvResults, hltvLogo, scheduleData } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData']);
+  initLiensOverlay();
+  const { liveState, hltvResults, hltvLogo, scheduleData, eventsData } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData', 'eventsData']);
   renderLive(liveState ?? { isLive: false });
   renderLiveMatches(liveState?.liveMatches ?? []);
   renderUpcoming(scheduleData?.upcoming ?? []);
   renderResults(hltvResults ?? [], hltvLogo ?? null);
+  renderEvents(eventsData?.events ?? []);
 
   chrome.runtime.sendMessage({ type: 'poll' })
     .then(resp => {
@@ -35,6 +57,7 @@ async function init() {
       if (resp?.liveMatches != null) renderLiveMatches(resp.liveMatches);
       if (resp?.scheduleData?.upcoming != null) renderUpcoming(resp.scheduleData.upcoming);
       if (resp?.hltvResults) renderResults(resp.hltvResults, resp.hltvLogo ?? hltvLogo);
+      if (resp?.eventsData?.events) renderEvents(resp.eventsData.events);
     })
     .catch(() => null);
 }
@@ -78,7 +101,15 @@ function renderLive(state) {
     badge.classList.remove('badge-offline');
     const featuredMatch = state.liveMatches?.[0];
     if (featuredMatch) {
-      document.getElementById('event-name').textContent = featuredMatch.event;
+      const badge = formatStageBadge(featuredMatch.stage, featuredMatch.playoff);
+      const eventNameEl = document.getElementById('event-name');
+      eventNameEl.textContent = featuredMatch.event;
+      if (badge) {
+        const s = document.createElement('span');
+        s.textContent = ` · ${badge.label}`;
+        s.style.cssText = `font-weight:800;color:${badge.cls === 'group' ? 'inherit' : 'var(--brand)'}`;
+        eventNameEl.appendChild(s);
+      }
       renderMatchCard(featuredMatch);
       document.getElementById('match-section').classList.remove('hidden');
       document.getElementById('watch-btn').onclick = openTwitch;
@@ -156,6 +187,13 @@ function renderLiveMatches(matches) {
     const eventEl = document.createElement('div');
     eventEl.className = 'lm-event';
     eventEl.textContent = m.event;
+    const badge = formatStageBadge(m.stage, m.playoff);
+    if (badge) {
+      const stageSpan = document.createElement('span');
+      stageSpan.textContent = ` · ${badge.label}`;
+      stageSpan.style.cssText = `font-weight:800;color:${badge.cls === 'group' ? 'var(--text-muted)' : 'var(--brand)'}`;
+      eventEl.appendChild(stageSpan);
+    }
 
     row.append(teamsRow, eventEl);
     list.appendChild(row);
@@ -250,8 +288,15 @@ function renderResults(matches, hltvLogo) {
     rowEl.append(sideA, scoreEl, sideB);
 
     const eventEl = document.createElement('div');
-    eventEl.textContent = m.event;
     eventEl.style.cssText = 'font-size:9px;color:var(--text-muted);margin-top:2px;text-align:center';
+    eventEl.textContent = m.event;
+    const badge = formatStageBadge(m.stage, m.playoff);
+    if (badge && badge.cls === 'final') {
+      const stageSpan = document.createElement('span');
+      stageSpan.textContent = ` · ${badge.label}`;
+      stageSpan.style.cssText = 'font-weight:800;color:var(--brand)';
+      eventEl.appendChild(stageSpan);
+    }
     teamsEl.append(rowEl, eventEl);
 
     const chevron = document.createElement('button');
@@ -271,8 +316,6 @@ function renderResults(matches, hltvLogo) {
       }
       panel.classList.add('open');
       chevron.textContent = '▴';
-      if (panel.dataset.loaded) return;
-      panel.dataset.loaded = 'true';
       renderHltvPanel(m, panel);
     });
 
@@ -292,8 +335,22 @@ function renderHltvPanel(data, el) {
     return d;
   };
 
-  // MAPS
-  el.appendChild(mkLabel('MAPS'));
+  // MAPS — with stage/playoff chips right-aligned on the same row
+  const mapsHeader = document.createElement('div');
+  mapsHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin:0 0 4px';
+  const mapsLabel = document.createElement('span');
+  mapsLabel.className = 'dp-label';
+  mapsLabel.style.margin = '0';
+  mapsLabel.textContent = 'MAPS';
+  mapsHeader.appendChild(mapsLabel);
+  const badge = formatStageBadge(data.stage, data.playoff);
+  if (badge && (badge.cls === 'final' || badge.label === '½ FINALE')) {
+    const stageChip = document.createElement('span');
+    stageChip.textContent = badge.label;
+    stageChip.style.cssText = `font-size:9px;font-weight:800;letter-spacing:.5px;padding:2px 7px;border-radius:20px;${badge.cls === 'final' ? 'background:var(--brand);color:#111' : 'background:var(--brand-dim);color:var(--brand);border:1px solid rgba(255,165,0,0.3)'}`;
+    mapsHeader.appendChild(stageChip);
+  }
+  el.appendChild(mapsHeader);
   const mapsGrid = document.createElement('div');
   mapsGrid.className = 'dp-maps';
   (data.maps ?? []).filter(m => m.scoreA != null && m.scoreB != null).forEach(m => {
@@ -344,10 +401,23 @@ function renderHltvPanel(data, el) {
     chip.append(mapEl);
 
     if (v.team) {
-      const teamEl = document.createElement('span');
-      teamEl.className = 'dp-veto-team';
-      teamEl.textContent = v.team;
-      chip.appendChild(teamEl);
+      const norm = s => (s ?? '').toLowerCase().trim();
+      const logoSrc = norm(v.team) === norm(data.teamA) ? data.logoA
+                    : norm(v.team) === norm(data.teamB) ? data.logoB
+                    : null;
+      if (logoSrc) {
+        const logoEl = document.createElement('img');
+        logoEl.className = 'dp-veto-logo';
+        logoEl.src = logoSrc;
+        logoEl.alt = v.team;
+        if (DARK_LOGOS.has(v.team)) logoEl.style.filter = 'brightness(0) invert(1)';
+        chip.appendChild(logoEl);
+      } else {
+        const teamEl = document.createElement('span');
+        teamEl.className = 'dp-veto-team';
+        teamEl.textContent = v.team;
+        chip.appendChild(teamEl);
+      }
     }
 
     vetoFlow.appendChild(chip);
@@ -434,6 +504,89 @@ function renderUpcoming(matches) {
 
     row.append(timeEl, teamsRow, eventEl);
     list.appendChild(row);
+  });
+}
+
+function formatEventDateRange(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  const monthShort = d => d.toLocaleDateString('fr-FR', { month: 'short' });
+  if (sameMonth) return `${start.getDate()} – ${end.getDate()} ${monthShort(start)}`;
+  return `${start.getDate()} ${monthShort(start)} – ${end.getDate()} ${monthShort(end)}`;
+}
+
+function getEventStatus(e) {
+  const s = (e.status ?? '').toLowerCase();
+  if (/ongoing|live|in.?progress|en.?cours/.test(s)) return 'ongoing';
+  if (/termin|finished|ended|over/.test(s)) return 'terminated';
+  return 'upcoming';
+}
+
+function renderEvents(events) {
+  const list = document.getElementById('events-list');
+  list.innerHTML = '';
+  if (!events?.length) {
+    list.innerHTML = '<p class="no-matches-msg" style="padding:16px 0">Aucun événement</p>';
+    return;
+  }
+
+  const groups = {};
+  events.forEach(e => {
+    const start = new Date(e.startDate);
+    const key = `${start.getFullYear()}-${String(start.getMonth()).padStart(2,'0')}`;
+    const label = start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    if (!groups[key]) groups[key] = { label, items: [] };
+    groups[key].items.push(e);
+  });
+
+  Object.values(groups).forEach(group => {
+    const monthEl = document.createElement('div');
+    monthEl.className = 'events-month';
+    monthEl.textContent = group.label;
+    list.appendChild(monthEl);
+
+    group.items.forEach(e => {
+      const status = getEventStatus(e);
+
+      const row = document.createElement('a');
+      row.className = 'event-row';
+      if (status === 'terminated') row.classList.add('event-row-terminated');
+      row.href = e.url;
+      row.target = '_blank';
+
+      const logoBg = document.createElement('div');
+      logoBg.className = 'event-logo-bg';
+      if (status === 'terminated') logoBg.classList.add('event-logo-bg-terminated');
+      const logo = document.createElement('img');
+      logo.className = 'event-logo';
+      logo.src = e.logoUrl;
+      logo.alt = '';
+      logo.style.filter = status === 'terminated' ? 'brightness(0) opacity(0.4)' : 'brightness(0)';
+      logo.onerror = () => { logo.style.visibility = 'hidden'; };
+      logoBg.appendChild(logo);
+
+      const info = document.createElement('div');
+      info.className = 'event-info';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'event-name';
+      nameEl.textContent = e.name;
+      const dateEl = document.createElement('span');
+      dateEl.className = 'event-date';
+      dateEl.textContent = formatEventDateRange(e.startDate, e.endDate);
+      info.append(nameEl, dateEl);
+
+      if (status !== 'upcoming') {
+        const chip = document.createElement('span');
+        chip.className = `event-status-chip chip-${status}`;
+        chip.textContent = status === 'ongoing' ? 'EN COURS' : 'TERMINÉ';
+        row.append(logoBg, info, chip);
+      } else {
+        row.append(logoBg, info);
+      }
+
+      list.appendChild(row);
+    });
   });
 }
 

@@ -19,6 +19,8 @@ async function fetchHltvResults() {
     scoreB: m.scoreB,
     winner: m.winner ?? null,
     event: m.event,
+    stage: m.stage ?? null,
+    playoff: m.playoff ?? null,
     endedAt: m.endedAt ?? m.date ?? null,
     hltvUrl: m.url ?? m.hltvUrl ?? null,
     logoA: m.logoA ?? null,
@@ -48,8 +50,8 @@ chrome.runtime.onInstalled.addListener(() => poll());
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'poll') {
     poll().then(async () => {
-      const { liveState, hltvResults, hltvLogo, scheduleData } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData']);
-      sendResponse({ ...(liveState ?? {}), hltvResults: hltvResults ?? [], hltvLogo: hltvLogo ?? null, scheduleData: scheduleData ?? null });
+      const { liveState, hltvResults, hltvLogo, scheduleData, eventsData } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData', 'eventsData']);
+      sendResponse({ ...(liveState ?? {}), hltvResults: hltvResults ?? [], hltvLogo: hltvLogo ?? null, scheduleData: scheduleData ?? null, eventsData: eventsData ?? null });
     }).catch(() => sendResponse({}));
     return true;
   }
@@ -63,20 +65,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 async function fetchSchedule() {
-  const r = await fetch(`${HLTV_URL}/schedule`, {
-    cache: 'no-store',
-  });
+  const r = await fetch(`${HLTV_URL}/schedule`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`Schedule: ${r.status}`);
+  return await r.json();
+}
+
+async function fetchEvents() {
+  const r = await fetch(`${HLTV_URL}/events`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`Events: ${r.status}`);
   return await r.json();
 }
 
 async function poll() {
   try {
     chrome.storage.local.set({ lastPollAt: Date.now() });
-    const [streamResult, hltvResult, scheduleResult] = await Promise.allSettled([
+    const [streamResult, hltvResult, scheduleResult, eventsResult] = await Promise.allSettled([
       fetchStreamStatus(),
       fetchHltvResults(),
       fetchSchedule(),
+      fetchEvents(),
     ]);
 
     if (hltvResult.status === 'fulfilled') {
@@ -88,6 +95,10 @@ async function poll() {
 
     if (scheduleResult.status === 'fulfilled') {
       chrome.storage.local.set({ scheduleData: scheduleResult.value });
+    }
+
+    if (eventsResult.status === 'fulfilled') {
+      chrome.storage.local.set({ eventsData: eventsResult.value });
     }
 
     const streamStatus = streamResult.status === 'fulfilled' ? streamResult.value : null;
