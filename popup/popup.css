@@ -2,6 +2,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body { background: #0d0d0f; }
+
 :root {
   --brand: #FFA500;
   --brand-dark: #cc8400;
@@ -23,6 +25,10 @@ body {
   background: var(--bg);
   color: var(--text);
   overflow-x: hidden;
+}
+
+#app {
+  padding-bottom: 8px;
 }
 
 ::-webkit-scrollbar { display: none; }
@@ -359,7 +365,7 @@ section { padding: 12px 16px 0; }
   gap: 10px;
 }
 
-.offline-icon { font-size: 26px; }
+.offline-icon { width: 40px; height: 40px; object-fit: contain; }
 
 .status-msg { color: var(--text-dim); font-size: 13px; font-weight: 500; }
 
