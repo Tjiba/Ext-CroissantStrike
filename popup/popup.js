@@ -1,8 +1,9 @@
 const TWITCH_URL = 'https://www.twitch.tv/croissantstrike';
 
-const WORKER_URL = 'https://patient-wave-e2d7.tjiba.workers.dev/';
 
 const DARK_LOGOS = new Set(['Spirit', 'Team Spirit', 'paiN', 'paiN Gaming']);
+
+let durationInterval = null;
 
 function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -11,33 +12,46 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
       btn.classList.add('active');
       document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+      if (btn.dataset.tab === 'results') {
+        chrome.runtime.sendMessage({ type: 'fetchResults' })
+          .then(resp => { if (resp?.hltvResults) renderResults(resp.hltvResults, resp.hltvLogo ?? null); })
+          .catch(() => null);
+      }
     });
   });
 }
 
 async function init() {
   initTabs();
-  const { liveState, hltvResults, hltvLogo } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo']);
+  const { liveState, hltvResults, hltvLogo, scheduleData } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData']);
   renderLive(liveState ?? { isLive: false });
   renderLiveMatches(liveState?.liveMatches ?? []);
-renderResults(hltvResults ?? [], hltvLogo ?? null);
+  renderUpcoming(scheduleData?.upcoming ?? []);
+  renderResults(hltvResults ?? [], hltvLogo ?? null);
 
   chrome.runtime.sendMessage({ type: 'poll' })
     .then(resp => {
-      if (resp?.liveMatches) renderLiveMatches(resp.liveMatches);
+      if (resp?.isLive != null) renderLive(resp);
+      if (resp?.liveMatches != null) renderLiveMatches(resp.liveMatches);
+      if (resp?.scheduleData?.upcoming != null) renderUpcoming(resp.scheduleData.upcoming);
       if (resp?.hltvResults) renderResults(resp.hltvResults, resp.hltvLogo ?? hltvLogo);
     })
     .catch(() => null);
 }
 
 function renderLive(state) {
+  // Reset conditional sections before re-rendering
+  document.getElementById('thumbnail-wrap').classList.add('hidden');
+  document.getElementById('match-section').classList.add('hidden');
+  document.getElementById('offline-section').classList.add('hidden');
+  document.getElementById('thumb-viewers').classList.add('hidden');
+  document.getElementById('stream-duration').classList.add('hidden');
+
   if (state.isLive && state.thumbnailUrl) {
     const wrap = document.getElementById('thumbnail-wrap');
     document.getElementById('stream-thumbnail').src = state.thumbnailUrl;
-    document.getElementById('thumbnail-link').addEventListener('click', e => {
-      e.preventDefault(); openTwitch();
-    });
-    document.getElementById('watch-btn-meta').addEventListener('click', openTwitch);
+    document.getElementById('thumbnail-link').onclick = e => { e.preventDefault(); openTwitch(); };
+    document.getElementById('watch-btn-meta').onclick = openTwitch;
     document.getElementById('stream-title').textContent = state.streamTitle || 'En direct';
     if (state.viewerCount != null) {
       const formatted = state.viewerCount.toLocaleString('fr-FR');
@@ -49,7 +63,8 @@ function renderLive(state) {
       const durationWrap = document.getElementById('stream-duration');
       durationEl.textContent = formatDuration(state.startedAt);
       durationWrap.classList.remove('hidden');
-      setInterval(() => { durationEl.textContent = formatDuration(state.startedAt); }, 1000);
+      if (durationInterval) clearInterval(durationInterval);
+      durationInterval = setInterval(() => { durationEl.textContent = formatDuration(state.startedAt); }, 1000);
     }
     wrap.classList.remove('hidden');
   }
@@ -60,41 +75,30 @@ function renderLive(state) {
     const isRediff = (state.streamTitle ?? '').toUpperCase().includes('REDIFFUSION');
     badge.querySelector('.badge-label').textContent = isRediff ? 'REDIFFUSION' : 'EN DIRECT';
     badge.classList.toggle('badge-rediff', isRediff);
-    if (state.matchDetail) {
-      document.getElementById('event-name').textContent = state.matchDetail.event;
-      renderMatchCard(state.matchDetail);
+    badge.classList.remove('badge-offline');
+    const featuredMatch = state.liveMatches?.[0];
+    if (featuredMatch) {
+      document.getElementById('event-name').textContent = featuredMatch.event;
+      renderMatchCard(featuredMatch);
       document.getElementById('match-section').classList.remove('hidden');
-      document.getElementById('watch-btn').addEventListener('click', openTwitch);
+      document.getElementById('watch-btn').onclick = openTwitch;
     }
   } else {
     badge.querySelector('.badge-label').textContent = 'HORS-LIGNE';
     badge.classList.add('badge-offline');
+    badge.classList.remove('badge-rediff');
     document.getElementById('offline-section').classList.remove('hidden');
-    document.getElementById('twitch-btn').addEventListener('click', openTwitch);
+    document.getElementById('twitch-btn').onclick = openTwitch;
   }
 }
 
 function renderMatchCard(match) {
   document.getElementById('team-a-name').textContent = match.teamA;
   document.getElementById('team-b-name').textContent = match.teamB;
-
-  const maps = match.maps ?? [];
-  const currentIdx = maps.findIndex(m => m.name === match.currentMap);
-  const mapNum = currentIdx >= 0 ? currentIdx + 1 : maps.length;
-  document.getElementById('map-badge').textContent =
-    `MAP ${mapNum} · ${(match.currentMap ?? '').toUpperCase()}`;
-
-  const currentMapData = maps.find(m => m.name === match.currentMap) ?? maps[maps.length - 1];
-  document.getElementById('score-a').textContent = currentMapData?.scoreA ?? 0;
-  document.getElementById('score-b').textContent = currentMapData?.scoreB ?? 0;
-
-  const pillsEl = document.getElementById('map-scores');
-  maps.forEach(m => {
-    const pill = document.createElement('span');
-    pill.className = `map-score-pill ${m.completed ? 'done' : 'ongoing'}`;
-    pill.textContent = m.completed ? `${m.scoreA}-${m.scoreB}` : 'En cours';
-    pillsEl.appendChild(pill);
-  });
+  document.getElementById('score-a').textContent = match.scoreA ?? 0;
+  document.getElementById('score-b').textContent = match.scoreB ?? 0;
+  document.getElementById('map-badge').textContent = match.bestOf ? `BO${match.bestOf}` : '';
+  document.getElementById('map-scores').innerHTML = '';
 }
 
 function renderLiveMatches(matches) {
@@ -103,7 +107,8 @@ function renderLiveMatches(matches) {
   const list = document.getElementById('global-live-list');
   list.innerHTML = '';
   section.classList.remove('hidden');
-  if (!matches?.length) {
+  const active = (matches ?? []).filter(m => !m.finished && m.winnerId == null);
+  if (!active.length) {
     header.classList.add('hidden');
     list.innerHTML = '<p class="no-matches-msg" style="text-align:center;padding:16px 0">Aucun match en cours</p>';
     return;
@@ -118,7 +123,7 @@ function renderLiveMatches(matches) {
     if (DARK_LOGOS.has(alt)) img.style.filter = 'brightness(0) invert(1)';
     return img;
   };
-  matches.forEach(m => {
+  active.forEach(m => {
     const row = document.createElement('div');
     row.className = 'live-match-row';
 
@@ -165,7 +170,12 @@ function renderResults(matches, hltvLogo) {
     list.innerHTML = '<p class="no-matches-msg">Aucun résultat récent</p>';
     return;
   }
-  matches.forEach(m => {
+  const sorted = [...matches].sort((a, b) => {
+    const da = a.endedAt ? new Date(a.endedAt).getTime() : 0;
+    const db = b.endedAt ? new Date(b.endedAt).getTime() : 0;
+    return db - da;
+  });
+  sorted.forEach(m => {
     const scoreA = m.scoreA ?? 0;
     const scoreB = m.scoreB ?? 0;
     const winnerIsA = m.winner ? m.winner === m.teamA : scoreA > scoreB;
@@ -358,15 +368,90 @@ function openTwitch() {
   chrome.tabs.create({ url: TWITCH_URL });
 }
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || !changes.liveState) return;
-  const state = changes.liveState.newValue;
-  if (!state) return;
-  if (state.viewerCount != null) {
-    const el = document.getElementById('viewer-overlay-value');
-    if (el) el.textContent = state.viewerCount.toLocaleString('fr-FR');
+function renderUpcoming(matches) {
+  const section = document.getElementById('upcoming-section');
+  const list = document.getElementById('upcoming-list');
+  list.innerHTML = '';
+
+  const now = Date.now();
+  const filtered = (matches ?? []).filter(m => {
+    if (!m.teamA) return false;
+    if (m.stars != null && m.stars < 3) return false;
+    const t = m.startsAt ?? m.scheduledAt ?? null;
+    if (!t) return true;
+    return new Date(t).getTime() > now - 60 * 60 * 1000;
+  });
+  if (!filtered.length) {
+    section.classList.add('hidden');
+    return;
   }
-  renderLiveMatches(state.liveMatches ?? []);
+  section.classList.remove('hidden');
+
+  const mkLogo = (src, alt) => {
+    const img = document.createElement('img');
+    img.className = 'lm-logo';
+    img.alt = alt;
+    img.src = src ?? '';
+    if (!src) img.style.visibility = 'hidden';
+    if (DARK_LOGOS.has(alt)) img.style.filter = 'brightness(0) invert(1)';
+    return img;
+  };
+
+  filtered.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'upcoming-match-row';
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'upcoming-time';
+    timeEl.textContent = new Date(m.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    const teamsRow = document.createElement('div');
+    teamsRow.className = 'lm-teams-row';
+
+    const sideA = document.createElement('div');
+    sideA.className = 'lm-side';
+    const nameA = document.createElement('span');
+    nameA.className = 'lm-team';
+    nameA.textContent = m.teamA;
+    sideA.append(mkLogo(m.logoA, m.teamA), nameA);
+
+    const vsEl = document.createElement('span');
+    vsEl.className = 'upcoming-vs';
+    vsEl.textContent = 'vs';
+
+    const sideB = document.createElement('div');
+    sideB.className = 'lm-side lm-side-b';
+    const nameB = document.createElement('span');
+    nameB.className = 'lm-team';
+    nameB.textContent = m.teamB;
+    sideB.append(nameB, mkLogo(m.logoB, m.teamB));
+
+    teamsRow.append(sideA, vsEl, sideB);
+
+    const eventEl = document.createElement('div');
+    eventEl.className = 'lm-event';
+    eventEl.textContent = m.event;
+
+    row.append(timeEl, teamsRow, eventEl);
+    list.appendChild(row);
+  });
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes.liveState) {
+    const state = changes.liveState.newValue;
+    if (state) renderLive(state);
+  }
+  if (changes.hltvResults) {
+    chrome.storage.local.get('hltvLogo', ({ hltvLogo }) => {
+      renderResults(changes.hltvResults.newValue ?? [], hltvLogo ?? null);
+    });
+  }
+  if (changes.scheduleData) {
+    const sd = changes.scheduleData.newValue;
+    if (sd) renderUpcoming(sd.upcoming ?? []);
+  }
 });
 
 init().catch(console.error);

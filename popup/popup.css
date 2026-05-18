@@ -460,6 +460,34 @@ section { padding: 12px 16px 0; }
   padding: 8px 0 4px;
 }
 
+/* ── MATCHS À VENIR ── */
+.upcoming-match-row {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 4px;
+  gap: 2px;
+}
+
+.upcoming-time {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.upcoming-vs {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding: 0 8px;
+}
+
 /* ── RÉSULTATS RÉCENTS ── */
 .recent-list { display: flex; flex-direction: column; gap: 6px; }
 .results-list { display: flex; flex-direction: column; gap: 4px; padding: 4px 10px 8px; }

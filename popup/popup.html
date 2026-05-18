@@ -78,6 +78,15 @@
         <div id="map-scores" class="map-pills-row"></div>
       </section>
 
+      <!-- HORS LIVE -->
+      <section id="offline-section" class="hidden">
+        <div class="status-card">
+          <div class="offline-icon">📡</div>
+          <p class="status-msg">CroissantStrike est hors-ligne</p>
+          <button id="twitch-btn" class="btn-outline">Voir la chaîne</button>
+        </div>
+      </section>
+
       <!-- MATCHS EN COURS (PandaScore) -->
       <section id="global-live-section">
         <div class="section-header">
@@ -86,13 +95,12 @@
         <div id="global-live-list"></div>
       </section>
 
-      <!-- HORS LIVE -->
-      <section id="offline-section" class="hidden">
-        <div class="status-card">
-          <div class="offline-icon">📡</div>
-          <p class="status-msg">CroissantStrike est hors-ligne</p>
-          <button id="twitch-btn" class="btn-outline">Voir la chaîne</button>
+      <!-- MATCHS À VENIR -->
+      <section id="upcoming-section" class="hidden">
+        <div class="section-header">
+          <span class="section-label">AUJOURD'HUI</span>
         </div>
+        <div id="upcoming-list"></div>
       </section>
 
       <footer class="live-footer">

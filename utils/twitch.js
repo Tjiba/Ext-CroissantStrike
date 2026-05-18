@@ -24,10 +24,12 @@ export function parseGqlResponse(data) {
   };
 }
 
-const WORKER_URL = 'https://patient-wave-e2d7.tjiba.workers.dev/';
+const LIVE_URL = 'https://api.tjiba.fr/live';
 
 export async function fetchStreamStatus() {
-  const resp = await fetch(WORKER_URL, { cache: 'no-store' });
+  const resp = await fetch(LIVE_URL, {
+    cache: 'no-store',
+  });
   if (!resp.ok) throw new Error(`Worker error: ${resp.status}`);
   const data = await resp.json();
 
