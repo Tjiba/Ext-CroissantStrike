@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getEventStageInfo, pickOngoingStage, matchOutcome } from './swiss.js';
+import { getEventStageInfo, pickOngoingStage, matchOutcome, buildColumns, computeZones } from './swiss.js';
 
 const major = {
   name: 'IEM Cologne Major 2026',
@@ -39,4 +39,23 @@ test('matchOutcome : vainqueur par le score', () => {
 });
 test('matchOutcome : match non joué → null', () => {
   assert.equal(matchOutcome({ scoreA: 0, scoreB: 0, status: 'upcoming' }), null);
+});
+
+test('buildColumns : data-driven, seulement les records présents', () => {
+  const cols = buildColumns(major.stages[0]);
+  const recs = cols.flat().map(c => c.record);
+  assert.deepEqual(recs, ['0-0', '2-0', '0-2']);
+  assert.ok(!recs.includes('1-0'));
+});
+test('computeZones : vainqueurs 2-0 → qualifiés 3-0', () => {
+  const z = computeZones(major.stages[0]);
+  assert.equal(z.qualified.find(g => g.record === '3-0').teams[0].name, 'Spirit');
+});
+test('computeZones : perdants 0-2 → éliminés 0-3', () => {
+  const z = computeZones(major.stages[0]);
+  assert.equal(z.eliminated.find(g => g.record === '0-3').teams[0].name, 'Aurora');
+});
+test('computeZones : match non joué → placeholder', () => {
+  const z = computeZones(major.stages[1]);
+  assert.equal(z.qualified.find(g => g.record === '3-2').teams[0].placeholder, true);
 });

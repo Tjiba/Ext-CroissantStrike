@@ -39,3 +39,43 @@ export function getEventStageInfo(event, majorStages) {
   const stage = pickOngoingStage(majorStages.stages);
   return stage ? { stage, stageLabel: stage.name } : null;
 }
+
+// Regroupe les matchs d'un stage par record ("0-0" → [matchs]).
+function byRecord(stage) {
+  const map = {};
+  for (const r of stage?.rounds ?? []) map[r.record] = r.matches ?? [];
+  return map;
+}
+
+// Colonnes de matchs (data-driven : uniquement les records présents).
+const COLUMN_LAYOUT = [
+  ['0-0'],
+  ['1-0', '0-1'],
+  ['2-0', '1-1', '0-2'],
+  ['2-1', '1-2'],
+  ['2-2'],
+];
+export function buildColumns(stage) {
+  const rec = byRecord(stage);
+  return COLUMN_LAYOUT
+    .map(records => records.filter(r => rec[r]).map(r => ({ record: r, matches: rec[r] })))
+    .filter(col => col.length);
+}
+
+// Zones qualifiés / éliminés, dérivées des buckets terminaux.
+export function computeZones(stage) {
+  const rec = byRecord(stage);
+  const winnersOf = r => (rec[r] ?? []).map(m => { const o = matchOutcome(m); return o ? o.winner : { placeholder: true }; });
+  const losersOf  = r => (rec[r] ?? []).map(m => { const o = matchOutcome(m); return o ? o.loser  : { placeholder: true }; });
+  const qualified = [
+    { record: '3-0', teams: winnersOf('2-0') },
+    { record: '3-1', teams: winnersOf('2-1') },
+    { record: '3-2', teams: winnersOf('2-2') },
+  ].filter(z => z.teams.length);
+  const eliminated = [
+    { record: '0-3', teams: losersOf('0-2') },
+    { record: '1-3', teams: losersOf('1-2') },
+    { record: '2-3', teams: losersOf('2-2') },
+  ].filter(z => z.teams.length);
+  return { qualified, eliminated };
+}
