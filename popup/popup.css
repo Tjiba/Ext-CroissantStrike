@@ -831,7 +831,7 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
 }
 .event-row-terminated .event-name { color: var(--text-muted); }
 .event-row-terminated .event-date { color: var(--text-muted); }
-.event-logo-bg-terminated { background: var(--bg3); }
+.event-logo-bg-terminated { opacity: 0.5; }
 
 .event-row {
   display: flex;
@@ -849,11 +849,12 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--brand);
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .event-logo {

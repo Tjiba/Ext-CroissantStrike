@@ -31,6 +31,7 @@ function initTabs() {
           .then(resp => { if (resp?.hltvResults) renderResults(resp.hltvResults, resp.hltvLogo ?? null); })
           .catch(() => null);
       }
+      syncPopupWidth();
     });
   });
 }
@@ -574,7 +575,6 @@ function renderEvents(events, majorStages) {
       logo.className = 'event-logo';
       logo.src = e.logoUrl;
       logo.alt = '';
-      logo.style.filter = status === 'terminated' ? 'brightness(0) opacity(0.4)' : 'brightness(0)';
       logo.onerror = () => { logo.style.visibility = 'hidden'; };
       logoBg.appendChild(logo);
 
@@ -633,6 +633,7 @@ function renderEvents(events, majorStages) {
         const open = panel.classList.toggle('open');
         chevron.textContent = open ? '▴' : '▾';
         if (open && !rendered) { renderSwissTree(stageInfo.stage, panel); rendered = true; }
+        syncPopupWidth();
       });
 
       const children = [logoBg, info];
@@ -762,6 +763,13 @@ function renderSwissTree(stage, panelEl) {
   board.appendChild(finalCol);
 
   panelEl.appendChild(board);
+}
+
+// La popup s'élargit pile à la largeur de l'arbre déplié (cap 780px), revient à 380px sinon.
+function syncPopupWidth() {
+  const onEvents = !document.getElementById('tab-events').classList.contains('hidden');
+  const board = onEvents ? document.querySelector('.event-swiss-panel.open .swiss-board') : null;
+  document.body.style.width = board ? Math.min(780, Math.max(380, board.scrollWidth + 28)) + 'px' : '';
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
