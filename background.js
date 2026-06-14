@@ -62,6 +62,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }).catch(() => sendResponse({}));
     return true;
   }
+  if (msg.type === 'fetchMajorStages') {
+    fetchMajorStages().then(data => {
+      chrome.storage.local.set({ majorStages: data });
+      sendResponse(data);
+    }).catch(() => sendResponse(null));
+    return true;
+  }
 });
 
 async function fetchSchedule() {
@@ -73,6 +80,12 @@ async function fetchSchedule() {
 async function fetchEvents() {
   const r = await fetch(`${HLTV_URL}/events`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`Events: ${r.status}`);
+  return await r.json();
+}
+
+async function fetchMajorStages() {
+  const r = await fetch(`${HLTV_URL}/major/stages`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`MajorStages: ${r.status}`);
   return await r.json();
 }
 
