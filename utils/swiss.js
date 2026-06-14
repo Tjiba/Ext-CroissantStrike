@@ -15,6 +15,16 @@ export function matchOutcome(m) {
   };
 }
 
+// Score de la série en MAPS. BO3+ : scoreA/scoreB sont déjà le score de maps.
+// BO1 (bestOf null/1) : scoreA/scoreB sont le score de manche → on renvoie 1-0 / 0-1.
+// null si le match n'est pas terminé. → { a, b } orienté teamA-teamB.
+export function seriesScore(m) {
+  if (!m || m.status !== 'finished' || m.scoreA == null || m.scoreB == null) return null;
+  if (m.bestOf && m.bestOf >= 2) return { a: m.scoreA, b: m.scoreB };
+  if (m.scoreA === m.scoreB) return null;
+  return m.scoreA > m.scoreB ? { a: 1, b: 0 } : { a: 0, b: 1 };
+}
+
 // Stage "en cours" pour la ligne du major parent : premier stage non terminé
 // (les stages se jouent séquentiellement), sinon le dernier.
 export function pickOngoingStage(stages) {

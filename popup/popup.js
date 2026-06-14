@@ -1,4 +1,4 @@
-import { getEventStageInfo, buildColumns, computeZones, matchOutcome } from '../utils/swiss.js';
+import { getEventStageInfo, buildColumns, computeZones, matchOutcome, seriesScore } from '../utils/swiss.js';
 
 let majorStagesCache = null;
 
@@ -660,9 +660,20 @@ function swissLogo(team) {
   return img;
 }
 
+function recordToneClass(record) {
+  const m = /^(\d+)-(\d+)$/.exec(record);
+  if (!m) return 'swiss-rec-even';
+  const net = (+m[1]) - (+m[2]);
+  if (net >= 2) return 'swiss-rec-win2';
+  if (net === 1) return 'swiss-rec-win1';
+  if (net <= -2) return 'swiss-rec-lose2';
+  if (net === -1) return 'swiss-rec-lose1';
+  return 'swiss-rec-even';
+}
+
 function swissRecordLabel(record) {
   const el = document.createElement('div');
-  el.className = 'swiss-record';
+  el.className = 'swiss-record ' + recordToneClass(record);
   el.textContent = record;
   return el;
 }
@@ -677,7 +688,24 @@ function swissMatchCell(m) {
     if (o.loser.name === m.teamA) a.classList.add('swiss-loser');
     if (o.loser.name === m.teamB) b.classList.add('swiss-loser');
   }
-  cell.append(a, b);
+
+  const score = seriesScore(m);
+  const mid = document.createElement('span');
+  if (score) {
+    mid.className = 'swiss-score';
+    const sa = document.createElement('b');
+    sa.textContent = score.a;
+    sa.className = score.a > score.b ? 'swiss-win' : 'swiss-lose';
+    const sb = document.createElement('b');
+    sb.textContent = score.b;
+    sb.className = score.b > score.a ? 'swiss-win' : 'swiss-lose';
+    mid.append(sa, document.createTextNode('–'), sb);
+  } else {
+    mid.className = 'swiss-vs';
+    mid.textContent = 'vs';
+  }
+
+  cell.append(a, mid, b);
   if (m.hltvUrl) {
     cell.classList.add('swiss-cell-link');
     cell.addEventListener('click', () => chrome.tabs.create({ url: m.hltvUrl }));

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getEventStageInfo, pickOngoingStage, matchOutcome, buildColumns, computeZones } from './swiss.js';
+import { getEventStageInfo, pickOngoingStage, matchOutcome, buildColumns, computeZones, seriesScore } from './swiss.js';
 
 const major = {
   name: 'IEM Cologne Major 2026',
@@ -58,4 +58,16 @@ test('computeZones : perdants 0-2 → éliminés 0-3', () => {
 test('computeZones : match non joué → placeholder', () => {
   const z = computeZones(major.stages[1]);
   assert.equal(z.qualified.find(g => g.record === '3-2').teams[0].placeholder, true);
+});
+
+test('seriesScore : BO3 → score de maps brut', () => {
+  assert.deepEqual(seriesScore({ scoreA: 2, scoreB: 0, bestOf: 3, status: 'finished' }), { a: 2, b: 0 });
+  assert.deepEqual(seriesScore({ scoreA: 1, scoreB: 2, bestOf: 3, status: 'finished' }), { a: 1, b: 2 });
+});
+test('seriesScore : BO1 (bestOf null) → 1-0 / 0-1 selon le vainqueur', () => {
+  assert.deepEqual(seriesScore({ scoreA: 13, scoreB: 4, bestOf: null, status: 'finished' }), { a: 1, b: 0 });
+  assert.deepEqual(seriesScore({ scoreA: 5, scoreB: 13, bestOf: null, status: 'finished' }), { a: 0, b: 1 });
+});
+test('seriesScore : non terminé → null', () => {
+  assert.equal(seriesScore({ scoreA: 1, scoreB: 0, bestOf: 3, status: 'live' }), null);
 });
