@@ -1,3 +1,7 @@
+import { getEventStageInfo, buildColumns, computeZones, matchOutcome } from '../utils/swiss.js';
+
+let majorStagesCache = null;
+
 const TWITCH_URL = 'https://www.twitch.tv/croissantstrike';
 
 const DARK_LOGOS = new Set(['Spirit', 'Team Spirit', 'paiN', 'paiN Gaming']);
@@ -44,12 +48,14 @@ function initLiensOverlay() {
 async function init() {
   initTabs();
   initLiensOverlay();
-  const { liveState, hltvResults, hltvLogo, scheduleData, eventsData } = await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData', 'eventsData']);
+  const { liveState, hltvResults, hltvLogo, scheduleData, eventsData, majorStages } =
+    await chrome.storage.local.get(['liveState', 'hltvResults', 'hltvLogo', 'scheduleData', 'eventsData', 'majorStages']);
+  majorStagesCache = majorStages ?? null;
   renderLive(liveState ?? { isLive: false });
   renderLiveMatches(liveState?.liveMatches ?? []);
   renderUpcoming(scheduleData?.upcoming ?? []);
   renderResults(hltvResults ?? [], hltvLogo ?? null);
-  renderEvents(eventsData?.events ?? []);
+  renderEvents(eventsData?.events ?? [], majorStagesCache);
 
   chrome.runtime.sendMessage({ type: 'poll' })
     .then(resp => {
@@ -57,7 +63,16 @@ async function init() {
       if (resp?.liveMatches != null) renderLiveMatches(resp.liveMatches);
       if (resp?.scheduleData?.upcoming != null) renderUpcoming(resp.scheduleData.upcoming);
       if (resp?.hltvResults) renderResults(resp.hltvResults, resp.hltvLogo ?? hltvLogo);
-      if (resp?.eventsData?.events) renderEvents(resp.eventsData.events);
+      if (resp?.eventsData?.events) renderEvents(resp.eventsData.events, majorStagesCache);
+    })
+    .catch(() => null);
+
+  chrome.runtime.sendMessage({ type: 'fetchMajorStages' })
+    .then(async ms => {
+      if (!ms) return;
+      majorStagesCache = ms;
+      const { eventsData: ed } = await chrome.storage.local.get('eventsData');
+      renderEvents(ed?.events ?? [], majorStagesCache);
     })
     .catch(() => null);
 }
@@ -525,7 +540,7 @@ function getEventStatus(e) {
   return 'upcoming';
 }
 
-function renderEvents(events) {
+function renderEvents(events, majorStages) {
   const list = document.getElementById('events-list');
   list.innerHTML = '';
   if (!events?.length) {
@@ -550,12 +565,7 @@ function renderEvents(events) {
 
     group.items.forEach(e => {
       const status = getEventStatus(e);
-
-      const row = document.createElement('a');
-      row.className = 'event-row';
-      if (status === 'terminated') row.classList.add('event-row-terminated');
-      row.href = e.url;
-      row.target = '_blank';
+      const stageInfo = getEventStageInfo(e, majorStages);
 
       const logoBg = document.createElement('div');
       logoBg.className = 'event-logo-bg';
@@ -578,18 +588,152 @@ function renderEvents(events) {
       dateEl.textContent = formatEventDateRange(e.startDate, e.endDate);
       info.append(nameEl, dateEl);
 
+      let chip = null;
       if (status !== 'upcoming') {
-        const chip = document.createElement('span');
+        chip = document.createElement('span');
         chip.className = `event-status-chip chip-${status}`;
         chip.textContent = status === 'ongoing' ? 'EN COURS' : 'TERMINÉ';
-        row.append(logoBg, info, chip);
-      } else {
-        row.append(logoBg, info);
       }
 
-      list.appendChild(row);
+      if (!stageInfo) {
+        const row = document.createElement('a');
+        row.className = 'event-row';
+        if (status === 'terminated') row.classList.add('event-row-terminated');
+        row.href = e.url;
+        row.target = '_blank';
+        if (chip) row.append(logoBg, info, chip); else row.append(logoBg, info);
+        list.appendChild(row);
+        return;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'event-wrapper';
+
+      const row = document.createElement('div');
+      row.className = 'event-row event-row-expandable';
+      if (status === 'terminated') row.classList.add('event-row-terminated');
+
+      const hltv = document.createElement('a');
+      hltv.className = 'event-hltv';
+      hltv.href = e.url;
+      hltv.target = '_blank';
+      hltv.title = 'Voir sur HLTV';
+      hltv.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>';
+      hltv.addEventListener('click', ev => ev.stopPropagation());
+
+      const chevron = document.createElement('span');
+      chevron.className = 'event-chevron';
+      chevron.textContent = '▾';
+
+      const panel = document.createElement('div');
+      panel.className = 'event-swiss-panel';
+
+      let rendered = false;
+      row.addEventListener('click', () => {
+        const open = panel.classList.toggle('open');
+        chevron.textContent = open ? '▴' : '▾';
+        if (open && !rendered) { renderSwissTree(stageInfo.stage, panel); rendered = true; }
+      });
+
+      const children = [logoBg, info];
+      if (chip) children.push(chip);
+      children.push(hltv, chevron);
+      row.append(...children);
+      wrapper.append(row, panel);
+      list.appendChild(wrapper);
     });
   });
+}
+
+function swissLogo(team) {
+  if (!team || team.placeholder || !team.logo) {
+    const ph = document.createElement('span');
+    ph.className = 'swiss-logo swiss-logo-ph';
+    ph.textContent = '?';
+    return ph;
+  }
+  const img = document.createElement('img');
+  img.className = 'swiss-logo';
+  img.src = team.logo;
+  img.alt = team.name ?? '';
+  img.onerror = () => { img.style.visibility = 'hidden'; };
+  return img;
+}
+
+function swissRecordLabel(record) {
+  const el = document.createElement('div');
+  el.className = 'swiss-record';
+  el.textContent = record;
+  return el;
+}
+
+function swissMatchCell(m) {
+  const cell = document.createElement('div');
+  cell.className = 'swiss-cell';
+  const a = swissLogo({ name: m.teamA, logo: m.logoA });
+  const b = swissLogo({ name: m.teamB, logo: m.logoB });
+  const o = matchOutcome(m);
+  if (o) {
+    if (o.loser.name === m.teamA) a.classList.add('swiss-loser');
+    if (o.loser.name === m.teamB) b.classList.add('swiss-loser');
+  }
+  cell.append(a, b);
+  if (m.hltvUrl) {
+    cell.classList.add('swiss-cell-link');
+    cell.addEventListener('click', () => chrome.tabs.create({ url: m.hltvUrl }));
+  }
+  return cell;
+}
+
+function swissZone(title, cls, groups) {
+  const box = document.createElement('div');
+  box.className = `swiss-zone ${cls}`;
+  const head = document.createElement('div');
+  head.className = 'swiss-zone-head';
+  head.textContent = title;
+  box.appendChild(head);
+  groups.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'swiss-zone-row';
+    const rec = document.createElement('span');
+    rec.className = 'swiss-zone-rec';
+    rec.textContent = g.record;
+    row.appendChild(rec);
+    g.teams.forEach(t => row.appendChild(swissLogo(t)));
+    box.appendChild(row);
+  });
+  return box;
+}
+
+function renderSwissTree(stage, panelEl) {
+  panelEl.innerHTML = '';
+  const board = document.createElement('div');
+  board.className = 'swiss-board';
+
+  buildColumns(stage).forEach(col => {
+    if (col.length === 1 && col[0].record === '2-2') return;
+    const colEl = document.createElement('div');
+    colEl.className = 'swiss-col';
+    col.forEach(group => {
+      colEl.appendChild(swissRecordLabel(group.record));
+      group.matches.forEach(m => colEl.appendChild(swissMatchCell(m)));
+    });
+    board.appendChild(colEl);
+  });
+
+  const zones = computeZones(stage);
+  const finalCol = document.createElement('div');
+  finalCol.className = 'swiss-col swiss-col-final';
+  if (zones.qualified.length) finalCol.appendChild(swissZone('QUALIFIÉS', 'swiss-zone-q', zones.qualified));
+  const r22 = (stage.rounds ?? []).find(r => r.record === '2-2');
+  if (r22?.matches?.length) {
+    finalCol.appendChild(swissRecordLabel('2-2'));
+    r22.matches.forEach(m => finalCol.appendChild(swissMatchCell(m)));
+  }
+  if (zones.eliminated.length) finalCol.appendChild(swissZone('ÉLIMINÉS', 'swiss-zone-e', zones.eliminated));
+  board.appendChild(finalCol);
+
+  panelEl.appendChild(board);
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -606,6 +750,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.scheduleData) {
     const sd = changes.scheduleData.newValue;
     if (sd) renderUpcoming(sd.upcoming ?? []);
+  }
+  if (changes.eventsData) {
+    renderEvents(changes.eventsData.newValue?.events ?? [], majorStagesCache);
+  }
+  if (changes.majorStages) {
+    majorStagesCache = changes.majorStages.newValue ?? majorStagesCache;
+    chrome.storage.local.get('eventsData', ({ eventsData }) => {
+      renderEvents(eventsData?.events ?? [], majorStagesCache);
+    });
   }
 });
 
