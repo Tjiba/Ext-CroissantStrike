@@ -575,6 +575,9 @@ function renderEvents(events, majorStages) {
       logo.className = 'event-logo';
       logo.src = e.logoUrl;
       logo.alt = '';
+      // Logos liquipedia "lightmode" = monochromes foncés (invisibles sur fond sombre) :
+      // on les inverse en blanc. Les logos api.tjiba.fr (colorés) restent tels quels.
+      if (/liquipedia/i.test(e.logoUrl || '')) logo.style.filter = 'brightness(0) invert(1)';
       logo.onerror = () => { logo.style.visibility = 'hidden'; };
       logoBg.appendChild(logo);
 

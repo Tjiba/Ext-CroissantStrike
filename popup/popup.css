@@ -848,14 +848,11 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
 .event-logo-bg {
   width: 32px;
   height: 32px;
-  border-radius: 9px;
-  background: #fff;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  overflow: hidden;
-  padding: 5px;
 }
 
 .event-logo {
