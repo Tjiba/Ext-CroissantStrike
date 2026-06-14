@@ -446,7 +446,9 @@ function renderUpcoming(matches) {
   const now = Date.now();
   const filtered = (matches ?? []).filter(m => {
     if (!m.teamA) return false;
-    if (m.stars != null && m.stars < 3) return false;
+    // /matches/upcoming ne renvoie déjà que les matchs notables (★★+) du jour.
+    // Pas de re-filtrage par étoiles ici : sinon on masque les matchs 2★ d'un Major
+    // (quasi tous ses matchs de groupe/swiss), ne laissant que les rares 3★+.
     const t = m.startsAt ?? m.scheduledAt ?? null;
     if (!t) return true;
     return new Date(t).getTime() > now - 60 * 60 * 1000;
