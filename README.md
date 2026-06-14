@@ -31,21 +31,15 @@ Après une modification de fichier, cliquer ↺ sur la carte de l'extension pour
 ```
 ExtCS/
 ├── manifest.json        # Config Chrome MV3 (permissions, popup, service worker)
-├── background.js        # Tourne en arrière-plan : polls API toutes les minutes
+├── background.js        # Tourne en arrière-plan : poll l'API toutes les minutes
 │
 ├── popup/
-│   ├── popup.html       # Interface de la popup (3 tabs : Live, Résultats, Liens)
+│   ├── popup.html       # Interface de la popup (3 tabs : Live, Résultats, Events)
 │   ├── popup.js         # Logique d'affichage
 │   └── popup.css        # Styles (thème sombre)
 │
 ├── utils/
-│   ├── twitch.js        # Récupère le statut du stream via le Worker
-│   ├── csapi.js         # Récupère le détail du match en cours (csapi.de)
-│   └── match.js         # Associe le titre du stream à un match csapi
-│
-├── worker/
-│   ├── index.js         # Cloudflare Worker : proxy Twitch + PandaScore
-│   └── wrangler.toml    # Config de déploiement
+│   └── twitch.js        # Statut du stream (/stream) + matchs live (/matches/live)
 │
 └── icons/               # Icônes de l'extension
 ```
@@ -57,48 +51,33 @@ ExtCS/
 ```
 background.js  (toutes les minutes)
     │
-    ├── Worker Cloudflare (patient-wave-e2d7.tjiba.workers.dev)
-    │       ├── Twitch API  → statut live, viewers, thumbnail
-    │       └── PandaScore  → matchs pro en cours + logos équipes
-    │
-    ├── api.tjiba.fr/extension → 10 derniers résultats (HLTV)
-    └── api.tjiba.fr/logo      → logos en couleur par nom d'équipe
+    ├── api.tjiba.fr/stream            → statut live Twitch (titre, viewers, démarrage)
+    ├── api.tjiba.fr/matches/live      → matchs pro en cours (scrapés HLTV)
+    ├── api.tjiba.fr/matches/upcoming  → matchs notables du jour
+    ├── api.tjiba.fr/matches/results   → 10 derniers résultats (scores, maps, veto)
+    └── api.tjiba.fr/events            → événements CS2 du mois
     
     → Stocke tout dans chrome.storage.local
     
 popup.js  (à l'ouverture)
     → Lit le storage et affiche immédiatement
     → Déclenche un poll pour rafraîchir les données
+    (logos servis par api.tjiba.fr/logos/{équipe}.png)
 ```
 
 ---
 
 ## APIs utilisées
 
-| API | Rôle |
-|-----|------|
-| `patient-wave-e2d7.tjiba.workers.dev` | Statut Twitch + matchs live PandaScore |
-| `api.tjiba.fr/extension?limit=10` | 10 derniers résultats HLTV |
-| `api.tjiba.fr/logo?teams=X,Y` | Logos équipes en couleur (PNG base64) |
-| `api.csapi.de` | Détail du match en cours (scores par map) |
+Tout vient de **`api.tjiba.fr`** (la CS2 API de Tjiba — données scrapées de HLTV). Endpoints publics, réponses JSON, aucun header requis.
 
-Les appels à `api.tjiba.fr` nécessitent le header `x-secret: Extcs3`.
+| Endpoint | Rôle |
+|----------|------|
+| `GET /stream` | Statut live Twitch (titre, viewers, démarrage) |
+| `GET /matches/live` | Matchs pro en cours (scrapés HLTV) |
+| `GET /matches/upcoming` | Matchs notables du jour à venir (avec logos) |
+| `GET /matches/results` | 10 derniers résultats : scores, maps, veto, stage, logos |
+| `GET /events` | Événements CS2 du mois |
+| `GET /logos/{équipe}.png` | Logo d'une équipe (servi depuis Cloudflare R2) |
 
----
-
-## Déployer le Worker Cloudflare
-
-Le Worker gère les credentials Twitch et PandaScore pour ne pas les exposer dans l'extension.
-
-```bash
-cd worker
-npx wrangler deploy
-```
-
-Variables à configurer dans le Dashboard Cloudflare (Worker → Settings → Variables) :
-
-| Variable | Description |
-|----------|-------------|
-| `TWITCH_CLIENT_ID` | Client ID de l'app Twitch |
-| `TWITCH_CLIENT_SECRET` | Secret de l'app Twitch |
-| `PANDASCORE_TOKEN` | Token Bearer PandaScore |
+La liste complète des endpoints (dont `/major/stages`, `/events/{id}/stages`, `/events/{id}/bracket`) est documentée sur la page d'accueil https://api.tjiba.fr.

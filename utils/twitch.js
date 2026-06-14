@@ -24,13 +24,14 @@ export function parseGqlResponse(data) {
   };
 }
 
-const LIVE_URL = 'https://api.tjiba.fr/live';
+const STREAM_URL = 'https://api.tjiba.fr/stream';
+const LIVE_MATCHES_URL = 'https://api.tjiba.fr/matches/live';
 
 export async function fetchStreamStatus() {
-  const resp = await fetch(LIVE_URL, {
+  const resp = await fetch(STREAM_URL, {
     cache: 'no-store',
   });
-  if (!resp.ok) throw new Error(`Worker error: ${resp.status}`);
+  if (!resp.ok) throw new Error(`Stream: ${resp.status}`);
   const data = await resp.json();
 
   return {
@@ -38,12 +39,36 @@ export async function fetchStreamStatus() {
     streamTitle: data.title ?? '',
     viewerCount: data.viewerCount ?? 0,
     startedAt: data.startedAt ?? null,
-    liveMatches: data.liveMatches ?? [],
-    pastMatches: data.pastMatches ?? [],
     thumbnailUrl: data.isLive
       ? `https://static-cdn.jtvnw.net/previews-ttv/live_user_${TWITCH_CHANNEL}-336x189.jpg?t=${Date.now()}`
       : null,
   };
+}
+
+// Matchs pro en cours sur la scène mondiale (scrapés HLTV) — endpoint dédié.
+// Note : /matches/live renvoyait une liste vide au moment du branchement, la forme
+// exacte d'un item n'a pas pu être observée ; on normalise défensivement vers les
+// champs attendus par la popup (renderLiveMatches / renderMatchCard).
+export async function fetchLiveMatches() {
+  const resp = await fetch(LIVE_MATCHES_URL, { cache: 'no-store' });
+  if (!resp.ok) throw new Error(`Live matches: ${resp.status}`);
+  const body = await resp.json();
+  const matches = body.matches ?? body ?? [];
+
+  return matches.map(m => ({
+    teamA: m.teamA,
+    teamB: m.teamB,
+    scoreA: m.scoreA ?? 0,
+    scoreB: m.scoreB ?? 0,
+    logoA: m.logoA ?? null,
+    logoB: m.logoB ?? null,
+    event: m.event,
+    stage: m.stage ?? null,
+    playoff: m.playoff ?? null,
+    bestOf: m.bestOf ?? null,
+    finished: m.finished ?? false,
+    winnerId: m.winnerId ?? m.winner ?? null,
+  }));
 }
 
 // parseStreamStatus gardé pour compatibilité tests

@@ -1,10 +1,10 @@
-import { fetchStreamStatus } from './utils/twitch.js';
+import { fetchStreamStatus, fetchLiveMatches } from './utils/twitch.js';
 
 const ALARM_NAME = 'cs-poll';
 const HLTV_URL = 'https://api.tjiba.fr';
 
 async function fetchHltvResults() {
-  const r = await fetch(`${HLTV_URL}/extension`, {
+  const r = await fetch(`${HLTV_URL}/matches/results`, {
     cache: 'no-store',
   });
   if (!r.ok) throw new Error(`HLTV: ${r.status}`);
@@ -65,7 +65,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 async function fetchSchedule() {
-  const r = await fetch(`${HLTV_URL}/schedule`, { cache: 'no-store' });
+  const r = await fetch(`${HLTV_URL}/matches/upcoming`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`Schedule: ${r.status}`);
   return await r.json();
 }
@@ -79,8 +79,9 @@ async function fetchEvents() {
 async function poll() {
   try {
     chrome.storage.local.set({ lastPollAt: Date.now() });
-    const [streamResult, hltvResult, scheduleResult, eventsResult] = await Promise.allSettled([
+    const [streamResult, liveMatchesResult, hltvResult, scheduleResult, eventsResult] = await Promise.allSettled([
       fetchStreamStatus(),
+      fetchLiveMatches(),
       fetchHltvResults(),
       fetchSchedule(),
       fetchEvents(),
@@ -102,9 +103,8 @@ async function poll() {
     }
 
     const streamStatus = streamResult.status === 'fulfilled' ? streamResult.value : null;
+    const liveMatches = liveMatchesResult.status === 'fulfilled' ? liveMatchesResult.value : [];
     if (!streamStatus) return;
-
-    const liveMatches = streamStatus.liveMatches ?? [];
 
     if (!streamStatus.isLive) {
       await chrome.storage.local.set({
