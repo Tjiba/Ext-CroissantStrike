@@ -69,6 +69,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }).catch(() => sendResponse(null));
     return true;
   }
+  if (msg.type === 'fetchBracket') {
+    fetchBracket(msg.eventId).then(data => sendResponse(data)).catch(() => sendResponse(null));
+    return true;
+  }
 });
 
 async function fetchSchedule() {
@@ -86,6 +90,12 @@ async function fetchEvents() {
 async function fetchMajorStages() {
   const r = await fetch(`${HLTV_URL}/major/stages`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`MajorStages: ${r.status}`);
+  return await r.json();
+}
+
+async function fetchBracket(eventId) {
+  const r = await fetch(`${HLTV_URL}/events/${encodeURIComponent(eventId)}/bracket`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`Bracket: ${r.status}`);
   return await r.json();
 }
 

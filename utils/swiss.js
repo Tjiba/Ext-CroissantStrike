@@ -44,10 +44,10 @@ export function getEventStageInfo(event, majorStages) {
   if (m) {
     const wanted = `stage ${m[2]}`;
     const stage = majorStages.stages.find(s => norm(s.name) === wanted);
-    return stage ? { stage, stageLabel: stage.name } : null;
+    return stage ? { kind: 'swiss', stage, stageLabel: stage.name } : null;
   }
-  const stage = pickOngoingStage(majorStages.stages);
-  return stage ? { stage, stageLabel: stage.name } : null;
+  // event parent (sans numéro de stage) → bracket playoffs du major
+  return { kind: 'playoffs' };
 }
 
 // Regroupe les matchs d'un stage par record ("0-0" → [matchs]).

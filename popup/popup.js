@@ -632,7 +632,17 @@ function renderEvents(events, majorStages) {
       row.addEventListener('click', () => {
         const open = panel.classList.toggle('open');
         chevron.textContent = open ? '▴' : '▾';
-        if (open && !rendered) { renderSwissTree(stageInfo.stage, panel); rendered = true; }
+        if (open && !rendered) {
+          rendered = true;
+          if (stageInfo.kind === 'playoffs') {
+            panel.innerHTML = '<p class="no-matches-msg" style="padding:14px">Chargement…</p>';
+            chrome.runtime.sendMessage({ type: 'fetchBracket', eventId: e.id })
+              .then(b => { renderPlayoffBracket(b, panel); syncPopupWidth(); })
+              .catch(() => { panel.innerHTML = '<p class="no-matches-msg" style="padding:14px">Bracket indisponible</p>'; });
+          } else {
+            renderSwissTree(stageInfo.stage, panel);
+          }
+        }
         syncPopupWidth();
       });
 
@@ -770,6 +780,66 @@ function syncPopupWidth() {
   const onEvents = !document.getElementById('tab-events').classList.contains('hidden');
   const board = onEvents ? document.querySelector('.event-swiss-panel.open .swiss-board') : null;
   document.body.style.width = board ? Math.min(780, Math.max(380, board.scrollWidth + 28)) + 'px' : '';
+}
+
+// ── PLAYOFFS (bracket élimination directe, sous le major parent) ──
+// Le bracket ne fournit que les NOMS d'équipes → on dérive le logo depuis api.tjiba.fr.
+function playoffTeam(name) {
+  return name ? { name, logo: `https://api.tjiba.fr/logos/${encodeURIComponent(name)}.png` } : { placeholder: true };
+}
+
+function playoffRoundLabel(n) {
+  if (n >= 8) return '8ES';
+  if (n === 4) return 'QUARTS';
+  if (n === 2) return 'DEMIS';
+  if (n === 1) return 'FINALE';
+  return `${n} MATCHS`;
+}
+
+function playoffMatchCell(m) {
+  const cell = document.createElement('div');
+  cell.className = 'swiss-cell';
+  const a = swissLogo(playoffTeam(m.teamA));
+  const b = swissLogo(playoffTeam(m.teamB));
+  if (m.winner) {
+    if (m.winner === m.teamA) b.classList.add('swiss-loser');
+    if (m.winner === m.teamB) a.classList.add('swiss-loser');
+  }
+  const mid = document.createElement('span');
+  if (m.scoreA != null && m.scoreB != null && (m.teamA || m.teamB)) {
+    mid.className = 'swiss-score';
+    const sa = document.createElement('b'); sa.textContent = m.scoreA; sa.className = m.scoreA > m.scoreB ? 'swiss-win' : 'swiss-lose';
+    const sb = document.createElement('b'); sb.textContent = m.scoreB; sb.className = m.scoreB > m.scoreA ? 'swiss-win' : 'swiss-lose';
+    mid.append(sa, document.createTextNode('–'), sb);
+  } else {
+    mid.className = 'swiss-vs';
+    mid.textContent = 'vs';
+  }
+  cell.append(a, mid, b);
+  if (m.url) {
+    cell.classList.add('swiss-cell-link');
+    cell.addEventListener('click', () => chrome.tabs.create({ url: m.url }));
+  }
+  return cell;
+}
+
+function renderPlayoffBracket(bracket, panelEl) {
+  panelEl.innerHTML = '';
+  const rounds = bracket?.rounds ?? [];
+  if (!rounds.length) {
+    panelEl.innerHTML = '<p class="no-matches-msg" style="padding:14px">Bracket pas encore disponible</p>';
+    return;
+  }
+  const board = document.createElement('div');
+  board.className = 'swiss-board swiss-board-playoff';
+  rounds.forEach(rd => {
+    const colEl = document.createElement('div');
+    colEl.className = 'swiss-col';
+    colEl.appendChild(swissRecordLabel(playoffRoundLabel((rd.matches ?? []).length)));
+    (rd.matches ?? []).forEach(m => colEl.appendChild(playoffMatchCell(m)));
+    board.appendChild(colEl);
+  });
+  panelEl.appendChild(board);
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {

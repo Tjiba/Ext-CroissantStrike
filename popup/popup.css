@@ -897,6 +897,7 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
 .event-swiss-panel.open { display: block; }
 
 .swiss-board { display: flex; gap: 9px; align-items: flex-start; overflow-x: auto; padding: 12px; }
+.swiss-board-playoff { align-items: center; }
 .swiss-col { flex: 0 0 auto; width: 84px; }
 .swiss-col-final { width: 112px; }
 .swiss-record { text-align: center; font-size: 10px; font-weight: 800; border-radius: 9px; padding: 2px 0; margin: 9px 0 7px; }

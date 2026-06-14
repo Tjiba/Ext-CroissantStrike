@@ -17,11 +17,13 @@ const major = {
   ],
 };
 
-test('getEventStageInfo : event de stage → son stage', () => {
-  assert.equal(getEventStageInfo({ name: 'Iem Cologne Major 2026 Stage 1' }, major)?.stageLabel, 'Stage 1');
+test('getEventStageInfo : event de stage → kind swiss + son stage', () => {
+  const info = getEventStageInfo({ name: 'Iem Cologne Major 2026 Stage 1' }, major);
+  assert.equal(info?.kind, 'swiss');
+  assert.equal(info?.stageLabel, 'Stage 1');
 });
-test('getEventStageInfo : event parent → stage en cours', () => {
-  assert.equal(getEventStageInfo({ name: 'Iem Cologne Major 2026' }, major)?.stageLabel, 'Stage 2');
+test('getEventStageInfo : event parent → kind playoffs', () => {
+  assert.equal(getEventStageInfo({ name: 'Iem Cologne Major 2026' }, major)?.kind, 'playoffs');
 });
 test('getEventStageInfo : event hors major → null', () => {
   assert.equal(getEventStageInfo({ name: 'Blast Bounty 2026 Season 2' }, major), null);
