@@ -831,7 +831,7 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
 }
 .event-row-terminated .event-name { color: var(--text-muted); }
 .event-row-terminated .event-date { color: var(--text-muted); }
-.event-logo-bg-terminated { background: var(--bg3); }
+.event-logo-bg-terminated { opacity: 0.5; }
 
 .event-row {
   display: flex;
@@ -848,8 +848,7 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
 .event-logo-bg {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background: var(--brand);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -857,8 +856,8 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
 }
 
 .event-logo {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
   display: block;
 }
@@ -885,6 +884,50 @@ a.recent-date:hover .hltv-favicon { opacity: 1; }
   font-weight: 600;
   color: var(--brand);
 }
+
+/* ── ARBRE SUISSE (onglet Events) ── */
+.event-wrapper { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.event-row-expandable { cursor: pointer; }
+.event-hltv { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--text-muted); flex-shrink: 0; }
+.event-hltv:hover { color: var(--brand); }
+.event-chevron { color: var(--text-muted); font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+.event-swiss-panel { display: none; background: #0a0a0c; }
+.event-swiss-panel.open { display: block; }
+
+.swiss-board { display: flex; gap: 9px; align-items: flex-start; overflow-x: auto; padding: 12px; }
+.swiss-board-playoff { align-items: center; }
+.swiss-col { flex: 0 0 auto; width: 84px; }
+.swiss-col-final { width: 112px; }
+.swiss-record { text-align: center; font-size: 10px; font-weight: 800; border-radius: 9px; padding: 2px 0; margin: 9px 0 7px; }
+.swiss-col > .swiss-record:first-child { margin-top: 0; }
+.swiss-rec-win2 { background: rgba(61,220,132,0.22); color: #3ddc84; }
+.swiss-rec-win1 { background: rgba(61,220,132,0.12); color: #6fd79b; }
+.swiss-rec-even { background: var(--bg3); color: var(--text-dim); }
+.swiss-rec-lose1 { background: rgba(255,82,82,0.10); color: #ff8f8f; }
+.swiss-rec-lose2 { background: rgba(255,82,82,0.20); color: #ff5252; }
+.swiss-cell { display: flex; align-items: center; justify-content: space-between; gap: 3px; background: #16161a; border: 1px solid var(--border); border-radius: 6px; padding: 4px; margin-bottom: 5px; }
+.swiss-cell-link { cursor: pointer; }
+.swiss-cell-link:hover { border-color: rgba(255,165,0,0.3); }
+.swiss-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+.swiss-logo-ph { width: 20px; height: 20px; background: #1a1d24; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #5b6470; }
+.swiss-loser { opacity: 0.4; }
+.swiss-score { display: flex; gap: 1px; font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.swiss-score .swiss-win { color: var(--text); }
+.swiss-score .swiss-lose { color: var(--text-muted); }
+.swiss-vs { font-size: 9px; font-weight: 700; color: var(--text-muted); }
+
+.swiss-zone { border-radius: 9px; padding: 6px; margin-bottom: 8px; }
+.swiss-zone:last-child { margin-bottom: 0; }
+.swiss-zone-q { background: rgba(61,220,132,0.1); border: 1px solid rgba(61,220,132,0.35); }
+.swiss-zone-e { background: rgba(255,82,82,0.09); border: 1px solid rgba(255,82,82,0.32); }
+.swiss-zone-head { text-align: center; font-size: 10px; font-weight: 800; margin-bottom: 6px; }
+.swiss-zone-q .swiss-zone-head { color: var(--green); }
+.swiss-zone-e .swiss-zone-head { color: var(--red); }
+.swiss-zone-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+.swiss-zone-row:last-child { margin-bottom: 0; }
+.swiss-zone-rec { font-size: 9px; font-weight: 800; width: 22px; flex-shrink: 0; }
+.swiss-zone-q .swiss-zone-rec { color: var(--green); }
+.swiss-zone-e .swiss-zone-rec { color: var(--red); }
 
 /* ── LIENS OVERLAY ── */
 .liens-overlay {

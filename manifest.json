@@ -6,9 +6,7 @@
   "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": [
     "https://api.tjiba.fr/*",
-    "https://static-cdn.jtvnw.net/*",
-    "https://cdn-api.pandascore.co/*",
-    "https://cdn.pandascore.co/*"
+    "https://static-cdn.jtvnw.net/*"
   ],
   "background": {
     "service_worker": "background.js",
